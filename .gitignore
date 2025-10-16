@@ -32,6 +32,7 @@ go.work
 # Temporary files
 *.tmp
 chunks.json
+test.txt
 
 # Data directory (scraped content)
 /data/
