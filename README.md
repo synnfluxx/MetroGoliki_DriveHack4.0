@@ -17,7 +17,7 @@
 ### 1. Установка и запуск
 
 ```bash
-git clone <repository>
+git clone https://github.com/synnfluxx/MetroGoliki_DriveHack4.0.git
 cd DriveHack
 go mod download
 ```
