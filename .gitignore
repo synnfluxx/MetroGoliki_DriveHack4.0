@@ -1,0 +1,38 @@
+# Environment variables
+.env
+
+# macOS
+.DS_Store
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Build artifacts
+/bin/
+/dist/
+/build/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+chunks.json
+
+# Data directory (scraped content)
+/data/
+*.json

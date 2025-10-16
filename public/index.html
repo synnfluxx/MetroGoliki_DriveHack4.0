@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Метроша - Помощник московского метро</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #8B0000; /* Бордовый цвет */
+            --primary-light: #f8e8e8;
+            --primary-dark: #600018;
+            --metro-red: #D6083B;
+            --metro-green: #43B02A;
+            --metro-orange: #F68D2E;
+            --metro-purple: #8E44AD;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --text-primary: #202124;
+            --text-secondary: #5f6368;
+            --text-muted: #80868b;
+            --border: #e0e0e0;
+            --radius: 16px;
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        .dark-theme {
+            --primary: #A52A2A;
+            --primary-light: #2a0a14;
+            --primary-dark: #8a1c4a;
+            --bg-primary: #121212;
+            --bg-secondary: #1e1e1e;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0b0;
+            --text-muted: #808080;
+            --border: #333333;
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            transition: var(--transition);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Фон с элементами метро */
+        .metro-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.03;
+            background-image:
+                radial-gradient(circle at 10% 20%, var(--metro-red) 0%, transparent 20%),
+                radial-gradient(circle at 90% 40%, var(--metro-green) 0%, transparent 20%),
+                radial-gradient(circle at 50% 80%, var(--metro-orange) 0%, transparent 20%),
+                radial-gradient(circle at 20% 60%, var(--metro-purple) 0%, transparent 20%);
+        }
+
+        .dark-theme .metro-background {
+            opacity: 0.05;
+        }
+
+        /* Шапка */
+        .header {
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: var(--bg-primary);
+            position: relative;
+            z-index: 10;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .logo-icon::before {
+            content: "";
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background:
+                radial-gradient(circle at 30% 30%, rgba(255,255,255,0.3) 0%, transparent 50%),
+                linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.2) 50%, transparent 60%);
+        }
+
+        .logo h1 {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .theme-switcher {
+            display: flex;
+            background-color: var(--bg-secondary);
+            border-radius: 20px;
+            padding: 4px;
+            border: 1px solid var(--border);
+        }
+
+        .theme-btn {
+            padding: 8px 12px;
+            border-radius: 16px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .theme-btn.active {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        /* Основной контент */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .welcome-message {
+            text-align: center;
+            max-width: 600px;
+            margin: 0 auto 40px;
+            position: relative;
+        }
+
+        .welcome-title {
+            font-size: 32px;
+            font-weight: 300;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            position: relative;
+        }
+
+        .welcome-title::after {
+            content: "";
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--metro-red), var(--metro-green), var(--metro-orange), var(--metro-purple));
+            border-radius: 3px;
+        }
+
+        .welcome-subtitle {
+            font-size: 16px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* Изображение Метроши */
+        .metrosha-character {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 8px 20px rgba(139, 0, 0, 0.2);
+        }
+
+        .metrosha-character::before {
+            content: "";
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background:
+                radial-gradient(circle at 30% 30%, rgba(255,255,255,0.3) 0%, transparent 50%),
+                linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.2) 50%, transparent 60%);
+        }
+
+        .metrosha-face {
+            width: 80px;
+            height: 80px;
+            background-color: #fff;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 2;
+        }
+
+        .metrosha-eyes {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+
+        .metrosha-eye {
+            width: 12px;
+            height: 12px;
+            background-color: #333;
+            border-radius: 50%;
+        }
+
+        .metrosha-mouth {
+            width: 30px;
+            height: 8px;
+            background-color: #333;
+            border-radius: 4px;
+        }
+
+        .metrosha-hat {
+            position: absolute;
+            top: -15px;
+            width: 60px;
+            height: 25px;
+            background-color: var(--primary);
+            border-radius: 10px 10px 0 0;
+            z-index: 1;
+        }
+
+        .metrosha-hat::before {
+            content: "";
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 10px;
+            background-color: var(--primary);
+            border-radius: 0 0 5px 5px;
+        }
+
+        /* Сообщения */
+        .message {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            max-width: 80%;
+            position: relative;
+        }
+
+        .user-message {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            flex-shrink: 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .avatar::before {
+            content: "";
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background:
+                radial-gradient(circle at 30% 30%, rgba(255,255,255,0.3) 0%, transparent 50%),
+                linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.2) 50%, transparent 60%);
+        }
+
+        .user-avatar {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        }
+
+        .ai-avatar {
+            background: linear-gradient(135deg, var(--metro-red), var(--metro-orange));
+            color: white;
+            border: 1px solid var(--border);
+        }
+
+        /* Message content style */
+        .message-content {
+            background-color: var(--bg-secondary);
+            padding: 16px 20px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            position: relative;
+            box-shadow: var(--shadow);
+        }
+
+        /* Кнопка озвучки */
+        .tts-button {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: none;
+            background-color: var(--primary-light);
+            color: var(--primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: var(--transition);
+            opacity: 0.7;
+        }
+
+        .tts-button:hover {
+            opacity: 1;
+            background-color: var(--primary);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .tts-button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .tts-button.playing {
+            background-color: var(--primary);
+            color: white;
+            animation: pulse-tts 1.5s infinite;
+        }
+
+        @keyframes pulse-tts {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .user-message .message-content {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+        }
+
+        .message-text {
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        /* Стили для отформатированного Markdown */
+        .message-text h1,
+        .message-text h2,
+        .message-text h3 {
+            margin-top: 12px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .message-text h1 { font-size: 18px; }
+        .message-text h2 { font-size: 16px; }
+        .message-text h3 { font-size: 15px; }
+
+        .message-text p {
+            margin: 8px 0;
+        }
+
+        .message-text ul,
+        .message-text ol {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+
+        .message-text li {
+            margin: 4px 0;
+        }
+
+        .message-text strong {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .user-message .message-text strong {
+            color: rgba(255, 255, 255, 0.95);
+            font-weight: 700;
+        }
+
+        .message-text code {
+            background-color: rgba(0, 0, 0, 0.05);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+
+        .dark-theme .message-text code {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .message-text pre {
+            background-color: rgba(0, 0, 0, 0.05);
+            padding: 12px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 8px 0;
+        }
+
+        .dark-theme .message-text pre {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .message-text blockquote {
+            border-left: 3px solid var(--primary);
+            padding-left: 12px;
+            margin: 8px 0;
+            color: var(--text-secondary);
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 8px 0;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--text-muted);
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(1) {
+            animation-delay: -0.32s;
+            background-color: var(--metro-red);
+        }
+        .typing-dot:nth-child(2) {
+            animation-delay: -0.16s;
+            background-color: var(--metro-green);
+        }
+        .typing-dot:nth-child(3) {
+            background-color: var(--primary);
+        }
+
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Панель ввода */
+        .input-container {
+            padding: 20px 24px;
+            border-top: 1px solid var(--border);
+            background-color: var(--bg-primary);
+            position: relative;
+            z-index: 10;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            padding: 8px 16px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+
+        .input-wrapper:focus-within {
+            box-shadow: 0 0 0 3px var(--primary-light), var(--shadow);
+            border-color: var(--primary);
+        }
+
+        #textInput {
+            flex: 1;
+            border: none;
+            background: transparent;
+            resize: none;
+            font-size: 16px;
+            padding: 8px 0;
+            outline: none;
+            color: var(--text-primary);
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        /* Кнопки ввода */
+        .input-buttons {
+            display: flex;
+            gap: 8px;
+            padding-bottom: 4px;
+            padding-left: 12px;
+        }
+
+        .icon-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 18px;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-btn:hover {
+            color: var(--primary);
+            background-color: var(--primary-light);
+        }
+
+        #sendButton {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        #sendButton:hover:not([disabled]) {
+            background-color: var(--primary-dark);
+        }
+
+        #sendButton:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Голосовой ввод */
+        #voiceContainer {
+            display: none; /* Скрыто по умолчанию */
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            z-index: 20;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            color: white;
+            padding: 40px;
+            text-align: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .voice-box {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        #voiceStatus {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+
+        .transcript-placeholder {
+            opacity: 0.7;
+        }
+
+        #transcriptText {
+            min-height: 40px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            border-bottom: 1px dashed var(--border);
+            padding-bottom: 10px;
+        }
+
+        .voice-mic {
+            width: 80px;
+            height: 80px;
+            background-color: var(--primary);
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            color: white;
+            box-shadow: 0 0 0 0 rgba(139, 0, 0, 0.7);
+            animation: pulse-mic 2s infinite;
+        }
+
+        @keyframes pulse-mic {
+            0% { box-shadow: 0 0 0 0 rgba(139, 0, 0, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(139, 0, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(139, 0, 0, 0); }
+        }
+
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .header {
+                padding: 12px 16px;
+            }
+            .chat-messages {
+                padding: 16px;
+            }
+            .message {
+                max-width: 90%;
+            }
+            .welcome-title {
+                font-size: 24px;
+            }
+            .input-container {
+                padding: 12px 16px;
+            }
+            .theme-switcher {
+                display: none; /* Скрываем на мобильных */
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="metro-background"></div>
+
+    <div id="voiceContainer">
+        <div class="voice-box">
+            <div class="voice-mic"><i class="fas fa-microphone"></i></div>
+            <div id="voiceStatus">Нажмите, чтобы начать говорить</div>
+            <div id="transcriptText"></div>
+            <button class="icon-btn" onclick="document.getElementById('voiceToggle').click()" title="Остановить запись">
+                <i class="fas fa-stop"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="header">
+        <div class="logo">
+            <div class="logo-icon"><i class="fas fa-subway"></i></div>
+            <h1>Метроша</h1>
+        </div>
+        <div class="theme-switcher">
+            <button class="theme-btn active" data-theme="light">
+                <i class="fas fa-sun"></i> Светлая
+            </button>
+            <button class="theme-btn" data-theme="dark">
+                <i class="fas fa-moon"></i> Темная
+            </button>
+            <button class="theme-btn" data-theme="system">
+                <i class="fas fa-desktop"></i> Система
+            </button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="chat-container">
+            <div id="chatMessages" class="chat-messages">
+                <div class="welcome-message">
+                    <div class="metrosha-character">
+                        <div class="metrosha-hat"></div>
+                        <div class="metrosha-face">
+                            <div class="metrosha-eyes">
+                                <div class="metrosha-eye"></div>
+                                <div class="metrosha-eye"></div>
+                            </div>
+                            <div class="metrosha-mouth"></div>
+                        </div>
+                    </div>
+                    <h2 class="welcome-title">Привет! Я Метроша.</h2>
+                    <p class="welcome-subtitle">
+                        Ваш голосовой AI-помощник по московскому метрополитену.
+                        Спрашивайте о маршрутах, станциях, расписании и тарифах.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="input-container">
+            <div class="input-wrapper">
+                <textarea id="textInput" placeholder="Задайте вопрос о метро..." rows="1"></textarea>
+                <div class="input-buttons">
+                    <button id="voiceToggle" class="icon-btn" title="Голосовой ввод (STT)">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                    <button id="sendButton" class="icon-btn" title="Отправить сообщение">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const themeButtons = document.querySelectorAll('.theme-btn');
+            const textInput = document.getElementById('textInput');
+            const sendButton = document.getElementById('sendButton');
+            const voiceContainer = document.getElementById('voiceContainer');
+            const voiceStatus = document.getElementById('voiceStatus');
+            const transcriptText = document.getElementById('transcriptText');
+            const voiceToggle = document.getElementById('voiceToggle');
+            const chatMessages = document.getElementById('chatMessages');
+
+            let mediaRecorder;
+            let audioChunks = [];
+            let isListening = false;
+
+            // --- КОНФИГУРАЦИЯ БЭКЕНДА ---
+            const API_BASE_URL = 'http://localhost:8080';
+            const CHAT_ENDPOINT = `${API_BASE_URL}/api/chat`;
+            const TTS_ENDPOINT = `${API_BASE_URL}/api/tts`;
+            const STT_ENDPOINT = `${API_BASE_URL}/api/stt`;
+            // ---------------------------
+
+            // Настройка marked.js для парсинга Markdown
+            if (typeof marked !== 'undefined') {
+                marked.setOptions({
+                    breaks: true,
+                    gfm: true,
+                    headerIds: false,
+                    mangle: false
+                });
+            }
+
+            // Функция для форматирования Markdown в HTML
+            function formatMarkdown(text) {
+                if (typeof marked !== 'undefined') {
+                    return marked.parse(text);
+                }
+                // Fallback: простая замена если marked.js не загружен
+                return text
+                    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                    .replace(/\n/g, '<br>');
+            }
+
+            // Установка темы
+            function setTheme(theme) {
+                if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    document.body.classList.add('dark-theme');
+                } else {
+                    document.body.classList.remove('dark-theme');
+                }
+
+                localStorage.setItem('theme', theme);
+
+                themeButtons.forEach(btn => {
+                    if (btn.dataset.theme === theme) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+            }
+
+            themeButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    setTheme(btn.dataset.theme);
+                });
+            });
+
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            setTheme(savedTheme);
+
+            // Автоматическое изменение высоты текстового поля
+            textInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+            });
+
+            // Прокрутка вниз
+            function scrollToBottom() {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            // Добавление сообщения пользователя
+            function addUserMessage(message) {
+                const messageElement = document.createElement('div');
+                messageElement.className = 'message user-message';
+                // Экранируем HTML для безопасности
+                const escapedMessage = message.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                messageElement.innerHTML = `
+                    <div class="avatar user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="message-content">
+                        <div class="message-text">${escapedMessage}</div>
+                    </div>
+                `;
+                chatMessages.appendChild(messageElement);
+                scrollToBottom();
+            }
+
+            // Добавление сообщения AI с кнопкой озвучки
+            function addAIMessage(message, isTyping = false) {
+                const messageElement = document.createElement('div');
+                messageElement.className = 'message ai-message';
+
+                if (isTyping) {
+                    messageElement.innerHTML = `
+                        <div class="avatar ai-avatar">
+                            <i class="fas fa-subway"></i>
+                        </div>
+                        <div class="message-content">
+                            <div class="typing-indicator">
+                                <div class="typing-dot"></div>
+                                <div class="typing-dot"></div>
+                                <div class="typing-dot"></div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    messageElement.innerHTML = `
+                        <div class="avatar ai-avatar">
+                            <i class="fas fa-subway"></i>
+                        </div>
+                        <div class="message-content">
+                            <button class="tts-button" title="Озвучить ответ">
+                                <i class="fas fa-volume-up"></i>
+                            </button>
+                            <div class="message-text">${message}</div>
+                        </div>
+                    `;
+                }
+
+                chatMessages.appendChild(messageElement);
+                scrollToBottom();
+                return messageElement;
+            }
+
+            // Асинхронная отправка сообщения на бэкенд
+            async function sendMessage() {
+                const message = textInput.value.trim();
+                if (!message) return;
+
+                // 1. Добавляем сообщение пользователя
+                addUserMessage(message);
+                textInput.value = '';
+                textInput.style.height = 'auto';
+
+                // 2. Показываем индикатор набора текста
+                const aiMessageElement = addAIMessage('', true);
+
+                try {
+                    // 3. Вызов API для получения текстового ответа от GigaChat
+                    const response = await fetch(CHAT_ENDPOINT, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ req: message })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Ошибка сети/API: ${response.status} ${response.statusText}`);
+                    }
+
+                    const data = await response.json();
+                    const aiResponse = data.response || "Не удалось получить ответ от GigaChat.";
+
+                    // 4. Убираем индикатор набора текста
+                    const typingIndicator = aiMessageElement.querySelector('.typing-indicator');
+                    if (typingIndicator) {
+                        typingIndicator.remove();
+                    }
+
+                    // 5. Добавляем ответ AI с форматированием Markdown
+                    const formattedResponse = formatMarkdown(aiResponse);
+                    aiMessageElement.querySelector('.message-content').innerHTML = `
+                        <button class="tts-button" title="Озвучить ответ">
+                            <i class="fas fa-volume-up"></i>
+                        </button>
+                        <div class="message-text">${formattedResponse}</div>
+                    `;
+
+                    // Добавляем обработчик кнопки озвучки
+                    const ttsButton = aiMessageElement.querySelector('.tts-button');
+                    if (ttsButton) {
+                        ttsButton.addEventListener('click', () => playTextToSpeech(aiResponse, ttsButton));
+                    }
+
+                } catch (error) {
+                    console.error('Error sending message:', error);
+                    const errorMessage = `Извините, произошла ошибка: ${error.message}`;
+                    // Показываем ошибку в чате
+                    aiMessageElement.querySelector('.message-content').innerHTML = `<div class="message-text">${errorMessage}</div>`;
+                }
+
+                scrollToBottom();
+            }
+
+            // Функция для озвучивания текста
+            let currentAudio = null;
+
+            async function playTextToSpeech(text, button) {
+                // Останавливаем текущее воспроизведение
+                if (currentAudio) {
+                    currentAudio.pause();
+                    currentAudio = null;
+                    // Убираем класс playing со всех кнопок
+                    document.querySelectorAll('.tts-button').forEach(btn => btn.classList.remove('playing'));
+                }
+
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+                try {
+                    // Удаляем Markdown форматирование для TTS
+                    const cleanText = text
+                        .replace(/\*\*(.+?)\*\*/g, '$1')
+                        .replace(/\*(.+?)\*/g, '$1')
+                        .replace(/#{1,6}\s/g, '')
+                        .replace(/\[(.+?)\]\(.+?\)/g, '$1')
+                        .replace(/<[^>]+>/g, '')
+                        .trim();
+
+                    const response = await fetch(TTS_ENDPOINT, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ text: cleanText })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`TTS API error: ${response.status}`);
+                    }
+
+                    const audioBlob = await response.blob();
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    
+                    currentAudio = new Audio(audioUrl);
+                    button.classList.add('playing');
+                    button.innerHTML = '<i class="fas fa-stop"></i>';
+
+                    currentAudio.onended = () => {
+                        button.classList.remove('playing');
+                        button.innerHTML = '<i class="fas fa-volume-up"></i>';
+                        button.disabled = false;
+                        URL.revokeObjectURL(audioUrl);
+                        currentAudio = null;
+                    };
+
+                    currentAudio.onerror = () => {
+                        button.classList.remove('playing');
+                        button.innerHTML = '<i class="fas fa-volume-up"></i>';
+                        button.disabled = false;
+                        URL.revokeObjectURL(audioUrl);
+                        currentAudio = null;
+                        alert('Ошибка воспроизведения аудио');
+                    };
+
+                    await currentAudio.play();
+                    button.disabled = false;
+
+                } catch (error) {
+                    console.error('TTS Error:', error);
+                    button.innerHTML = '<i class="fas fa-volume-up"></i>';
+                    button.disabled = false;
+                    alert('Ошибка озвучивания: ' + error.message);
+                }
+            }
+
+            sendButton.addEventListener('click', sendMessage);
+
+            textInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            // Голосовой ввод (STT) через серверный Salute API
+            async function startVoiceRecognition() {
+                if (isListening) return;
+
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    
+                    audioChunks = [];
+                    mediaRecorder = new MediaRecorder(stream);
+
+                    mediaRecorder.ondataavailable = (event) => {
+                        if (event.data.size > 0) {
+                            audioChunks.push(event.data);
+                        }
+                    };
+
+                    mediaRecorder.onstop = async () => {
+                        voiceStatus.textContent = 'Распознаю речь...';
+                        
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        
+                        try {
+                            // Конвертируем в PCM 16kHz для Salute API
+                            const pcmData = await convertToPCM(audioBlob);
+                            
+                            // Отправляем на сервер
+                            const response = await fetch(STT_ENDPOINT, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'audio/x-pcm;bit=16;rate=16000'
+                                },
+                                body: pcmData
+                            });
+
+                            if (!response.ok) {
+                                throw new Error(`STT API error: ${response.status}`);
+                            }
+
+                            const data = await response.json();
+                            const recognizedText = data.text || '';
+
+                            if (recognizedText) {
+                                transcriptText.innerHTML = `<strong>${recognizedText}</strong>`;
+                                textInput.value = recognizedText;
+                                // Автоматически отправляем сообщение
+                                setTimeout(sendMessage, 500);
+                            } else {
+                                transcriptText.innerHTML = 'Речь не распознана';
+                            }
+                        } catch (error) {
+                            console.error('STT Error:', error);
+                            transcriptText.innerHTML = `Ошибка: ${error.message}`;
+                        }
+                        
+                        stopVoiceRecognition();
+                    };
+
+                    mediaRecorder.start();
+                    isListening = true;
+                    voiceToggle.classList.add('listening');
+                    voiceStatus.textContent = 'Слушаю... Говорите сейчас';
+                    voiceContainer.style.display = 'flex';
+                    transcriptText.innerHTML = '<span class="transcript-placeholder">Слушаю вашу речь...</span>';
+
+                } catch (error) {
+                    console.error('Ошибка доступа к микрофону:', error);
+                    alert('Не удалось получить доступ к микрофону');
+                }
+            }
+
+            function stopVoiceRecognition() {
+                if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                    mediaRecorder.stop();
+                    mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                }
+                isListening = false;
+                voiceToggle.classList.remove('listening');
+                setTimeout(() => {
+                    voiceContainer.style.display = 'none';
+                }, 2000);
+            }
+
+            // Конвертация WebM в PCM 16kHz
+            async function convertToPCM(audioBlob) {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const arrayBuffer = await audioBlob.arrayBuffer();
+                const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                
+                // Ресемплинг до 16kHz
+                const targetSampleRate = 16000;
+                const offlineContext = new OfflineAudioContext(
+                    1, // моно
+                    audioBuffer.duration * targetSampleRate,
+                    targetSampleRate
+                );
+                
+                const source = offlineContext.createBufferSource();
+                source.buffer = audioBuffer;
+                source.connect(offlineContext.destination);
+                source.start();
+                
+                const resampledBuffer = await offlineContext.startRendering();
+                const pcmData = resampledBuffer.getChannelData(0);
+                
+                // Конвертация в 16-bit PCM
+                const pcm16 = new Int16Array(pcmData.length);
+                for (let i = 0; i < pcmData.length; i++) {
+                    const s = Math.max(-1, Math.min(1, pcmData[i]));
+                    pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                }
+                
+                return pcm16.buffer;
+            }
+
+            // Обработчик кнопки голосового ввода
+            voiceToggle.addEventListener('click', function() {
+                if (!isListening) {
+                    startVoiceRecognition();
+                } else {
+                    stopVoiceRecognition();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
